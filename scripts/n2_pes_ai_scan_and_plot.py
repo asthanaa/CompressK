@@ -75,6 +75,11 @@ def main() -> None:
         default=str(_ROOT / "out_n2_pes_ai"),
         help="Output prefix (writes <out>.csv and <out>.png)",
     )
+    parser.add_argument(
+        "--gnn-model",
+        default=None,
+        help="Optional torch checkpoint path for the GNN backend (FeatureMLP).",
+    )
     args = parser.parse_args()
 
     config_path = args.config
@@ -101,6 +106,23 @@ def main() -> None:
 
     cas = cas_spec_from_dict(cfg.get("cas", {}))
     ai_params = ai_selector_krylov_params_from_dict(cfg.get("ai_selector_krylov", {}))
+
+    # Optional learned model for the GNN backend.
+    gnn_model = None
+    model_path = args.gnn_model
+    if model_path is None:
+        model_path = cfg.get("ai_selector_krylov", {}).get("gnn_model_path")
+    if model_path:
+        try:
+            from ccik.feature_mlp import load_feature_mlp_checkpoint
+
+            gnn_model = load_feature_mlp_checkpoint(model_path, map_location="cpu")
+            print(f"Loaded GNN model checkpoint: {model_path}")
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to load --gnn-model/ai_selector_krylov.gnn_model_path. "
+                "Use a FeatureMLP checkpoint created by scripts/train_feature_mlp.py"
+            ) from e
 
     out_prefix = Path(args.out)
     out_csv = out_prefix.with_suffix(".csv")
@@ -163,6 +185,7 @@ def main() -> None:
             ncas,
             nelec,
             selector_backend="gnn",
+            gnn_model=gnn_model,
             params=ai_params,
         )
         e_ai_gnn_tot = float(ecore + e_ai_gnn_cas)

@@ -81,6 +81,11 @@ def main() -> None:
         default=None,
         help="Path to TOML config (default: packaged ccik/defaults/config.toml)",
     )
+    parser.add_argument(
+        "--gnn-model",
+        default=None,
+        help="Optional torch checkpoint path for AI-selector Krylov (GNN backend).",
+    )
     args = parser.parse_args()
 
     config_path = args.config
@@ -114,6 +119,16 @@ def main() -> None:
     cipsi_params = cipsi_params_from_dict(cfg.get("cipsi", {}))
     fciqmc_krylov_params = fciqmc_krylov_params_from_dict(cfg.get("fciqmckrylov", {}))
     ai_params = ai_selector_krylov_params_from_dict(cfg.get("ai_selector_krylov", {}))
+
+    gnn_model = None
+    model_path = args.gnn_model
+    if model_path is None:
+        model_path = cfg.get("ai_selector_krylov", {}).get("gnn_model_path")
+    if model_path:
+        from ccik.feature_mlp import load_feature_mlp_checkpoint
+
+        gnn_model = load_feature_mlp_checkpoint(model_path, map_location="cpu")
+        print(f"Loaded GNN model checkpoint: {model_path}")
 
     # Prepare header + row layout
     multi = len(methods) > 1
@@ -208,6 +223,7 @@ def main() -> None:
                         ncas,
                         nelec,
                         selector_backend="gnn",
+                        gnn_model=gnn_model,
                         params=ai_params,
                         stats=st,
                     )

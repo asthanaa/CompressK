@@ -43,6 +43,7 @@ from .ai_selector_krylov import (
     ccik_ground_energy_ai_selector_krylov,
 )
 from .operator_nn import OperatorNN, OperatorNNConfig, select_topk_nodes, topk_recall
+from .feature_mlp import FeatureMLP, FeatureMLPConfig, load_feature_mlp_checkpoint
 
 __all__ = [
     "CCIKParams",
@@ -59,6 +60,9 @@ __all__ = [
     "AISelectorKrylovParams",
     "OperatorNN",
     "OperatorNNConfig",
+    "FeatureMLP",
+    "FeatureMLPConfig",
+    "load_feature_mlp_checkpoint",
     "select_topk_nodes",
     "topk_recall",
     "cipsi_dense_variational",

@@ -445,6 +445,7 @@ def ccik_ground_energy_ai_selector_krylov(
     selector_backend: str = "cipsi",
     gnn_model: Any | None = None,
     selector: Selector | None = None,
+    iteration_collector: Any | None = None,
     params: AISelectorKrylovParams | None = None,
     stats: dict[str, float] | dict[str, int] | None = None,
 ) -> float:
@@ -460,6 +461,13 @@ def ccik_ground_energy_ai_selector_krylov(
     Important: The selector must NOT compute Hamiltonian elements. The driver still computes
     v_full = H|q_k> using the existing exact routine (PySCF contract_2e) and then masks
     to the proposed determinant set.
+
+    iteration_collector:
+        Optional callback hook for data collection / debugging.
+        If provided, it will be called once per Krylov iteration as:
+            iteration_collector(k=k, qk=qk, v_full=v_full, E_k=E_k, hdiag=hdiag,
+                                supp_k=supp_k, cand_ids=cand_ids, cand_parent_w=cand_parent_w)
+        This is kept intentionally untyped to avoid importing ML/data deps.
     """
 
     if params is None:
@@ -534,6 +542,22 @@ def ccik_ground_energy_ai_selector_krylov(
             # Only CIPSISelector uses v_full; GNNSelector ignores it.
             "v_full": v_full,
         }
+
+        if iteration_collector is not None:
+            try:
+                iteration_collector(
+                    k=int(k),
+                    qk=qk,
+                    v_full=v_full,
+                    E_k=float(E_k),
+                    hdiag=hdiag,
+                    supp_k=supp_k,
+                    cand_ids=cand_ids,
+                    cand_parent_w=cand_parent_w,
+                )
+            except Exception:
+                # Collector hooks should not affect the main algorithm.
+                pass
 
         proposed = selector.propose(psi_sparse, k, context)
 
