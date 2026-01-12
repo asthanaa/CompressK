@@ -1,0 +1,84 @@
+# Editable run configuration for scripts/n2_cas_scan.py
+
+[run]
+# Choose algorithm:
+# - "ccik"        : plain dense CCIK
+# - "ccik_thick"  : dense CCIK with thick restart (reuse best Ritz vectors)
+# - "cipsi_var"   : CIPSI variational-only (no PT2)
+# - "fciqmckrylov": dense Krylov with FCIQMC-inspired stochastic selection
+methods = ["ccik", "ccik_thick", "cipsi_var"]
+
+# To run multiple methods in one sweep, set `methods` instead of `method`:
+# methods = ["ccik", "ccik_thick"]
+
+[molecule]
+basis = "6-31g"
+unit = "Angstrom"
+charge = 0
+spin = 0
+verbose = 0
+
+[scan]
+# Inclusive endpoints and number of points.
+R_min = 0.8
+R_max = 3.0
+n_points = 16
+
+[cas]
+# CASCI active space
+ncas = 10
+nelecas = 10
+ncore = 2
+
+[ccik]
+# Dense CCIK parameters
+m = 250
+nadd = 2000
+nkeep = 10000
+Kv = 3000
+verbose = false
+
+[ccik_thick]
+# Dense CCIK + thick restart parameters (reuseRitz)
+m_cycle = 25    #size of krylov subsapce after which it simplifies and takes the eigenvector as a representative
+ncycles = 10    #max number of simplified eigenvectors taken
+nroot = 5   #How many lowest-energy Ritz vectors to keep and reuse as starting vectors for the next cycle (this is the “thick” part of thick restart).
+tol = 1e-6
+
+# Selection/compression knobs (same meaning as in [ccik])
+nadd = 2000
+nkeep = 10000
+Kv = 3000
+verbose = false
+
+[cipsi]
+# CIPSI variational-only (no PT2)
+niter = 10
+nadd = 2000
+ndet_max = 10000
+Kv = 3000
+davidson_tol = 1e-10
+verbose = false
+
+[fciqmckrylov]
+# FCIQMC-inspired stochastic Krylov build.
+# Walkers stochastically spawn onto connected determinants; only visited determinants are scored.
+m = 100
+nadd = 2000
+nkeep = 10000
+Kv = 3000
+
+# walker spawning knobs
+n_walkers = 20000
+seed = 0
+
+# p(parent=J) ∝ |q_J|^parent_power
+parent_power = 1.0
+
+# excitation proposal mixture
+p_double = 0.6
+mixed_double_weight = 1.0
+eps_denom = 1e-12
+
+orth_tol = 1e-12
+verbose = false

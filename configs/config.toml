@@ -1,0 +1,108 @@
+# Editable run configuration for scripts/n2_cas_scan.py
+
+[run]
+# Choose algorithm:
+# - "ccik"        : plain dense CCIK
+# - "ccik_thick"  : dense CCIK with thick restart (reuse best Ritz vectors)
+# - "cipsi_var"   : CIPSI variational-only (no PT2)
+# Use by adding one of: "ccik", "ccik_thick", "cipsi_var", "fciqmckrylov", "ai_selector_krylov".
+methods = ["ai_selector_krylov"]
+
+# Single-method form (use this instead of `methods` if you only want one):
+# method = "ccik"
+
+# To run multiple methods in one sweep, set `methods` instead of `method`.
+
+[molecule]
+basis = "6-31g"
+unit = "Angstrom"
+charge = 0
+spin = 0
+verbose = 0
+
+[scan]
+# Inclusive endpoints and number of points.
+R_min = 1.0
+R_max = 5.0
+n_points = 20
+
+[cas]
+# CASCI active space
+ncas = 10
+nelecas = 10
+ncore = 2
+
+[ccik]
+# Dense CCIK parameters
+m = 100
+nadd = 5000
+nkeep = 10000
+Kv = 5000
+orth_tol = 1e-4 #useless
+verbose = false
+
+[ccik_thick]
+# Dense CCIK + thick restart parameters (reuseRitz)
+m_cycle = 25
+ncycles = 1
+nroot = 5
+tol = 1e-6 #convergence criterion of krylov
+
+# Selection/compression knobs (same meaning as in [ccik])
+nadd = 5000
+nkeep = 10000
+Kv = 5000
+orth_tol = 1e-4 #useless
+verbose = false
+
+[cipsi]
+# CIPSI variational-only (no PT2)
+niter = 10
+nadd = 5000
+ndet_max = 10000
+Kv = 5000
+davidson_tol = 1e-10
+verbose = false
+
+[fciqmckrylov]
+# FCIQMC-inspired stochastic Krylov build.
+# Walkers stochastically spawn onto connected determinants; only visited determinants are scored.
+# Use by adding "fciqmckrylov" to [run].methods.
+m = 50
+nadd = 5000
+nkeep = 10000
+Kv = 5000
+
+n_walkers = 100000
+seed = 0
+
+# p(parent=J) ∝ |q_J|^parent_power
+parent_power = 1.0
+
+p_double = 0.6
+mixed_double_weight = 1.0
+eps_denom = 1e-12
+
+orth_tol = 1e-12 
+verbose = false
+
+[ai_selector_krylov]
+# AI-selector Krylov (separate optional subroutine).
+# Used by: scripts/n2_pes_ai_scan_and_plot.py
+
+m = 50
+nadd = 5000
+nkeep = 10000
+Kv = 5000
+
+# Candidate discovery walkers (proposal only; exact matvec still used).
+n_walkers = 50000
+seed = 0
+
+parent_power = 1.0
+p_double = 0.6
+mixed_double_weight = 1.0
+eps_denom = 1e-12
+
+orth_tol = 1e-12
+verbose = false
