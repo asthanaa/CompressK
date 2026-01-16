@@ -130,7 +130,6 @@ E0_total = ecore + E0_cas
 
 - `m`: Krylov dimension (PDF Eq. (1)).
 - `nadd`: how many external determinants to add by score $\eta$ each step (PDF Eq. (6) + the set $S_k$ in Eq. (7)).
-- `nadd`: how many external determinants to add by score `eta` each step (PDF Eq. (6) + the set S_k in Eq. (7)).
 - `nkeep`: how many coefficients to keep when compressing each Krylov basis vector (implementation detail; see “differences vs the PDF”).
 - `Kv`: stabilizer size: always keep the top-`Kv` determinants by |v|.
 

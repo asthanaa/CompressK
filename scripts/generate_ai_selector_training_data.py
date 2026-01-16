@@ -41,15 +41,7 @@ from ccik import (  # noqa: E402
 )
 from ccik.config import cas_spec_from_dict, load_config  # noqa: E402
 
-
-def make_n2_atom(R_ang: float) -> str:
-    z = R_ang / 2.0
-    return f"""
-    N 0.0 0.0 {-z}
-    N 0.0 0.0 {+z}
-    """
-
-
+from n2_utils import make_n2_atom
 def _features_for(det, *, E_k: float, hdiag: np.ndarray, cand_parent_w: dict, iteration: int, eps_denom: float):
     ia, ib = det
     w = float(cand_parent_w.get(det, 0.0))

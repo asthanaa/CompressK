@@ -6,7 +6,7 @@
 # - "ccik_thick"  : dense CCIK with thick restart (reuse best Ritz vectors)
 # - "cipsi_var"   : CIPSI variational-only (no PT2)
 # Use by adding one of: "ccik", "ccik_thick", "cipsi_var", "fciqmckrylov", "ai_selector_krylov".
-methods = ["ai_selector_krylov"]
+methods = ["ccik_thick"]
 
 # Single-method form (use this instead of `methods` if you only want one):
 # method = "ccik"

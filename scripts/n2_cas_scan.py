@@ -50,6 +50,8 @@ from ccik.config import (  # noqa: E402
     run_methods_from_dict,
 )
 
+from n2_utils import make_n2_atom
+
 
 def _canonical_method(method: str) -> str:
     m = method.strip()
@@ -64,16 +66,6 @@ def _canonical_method(method: str) -> str:
     if m in ("ai_selector_krylov", "ai-selector-krylov", "ai_krylov", "ai"):
         return "ai_selector_krylov"
     return m
-
-
-def make_n2_atom(R_ang: float) -> str:
-    z = R_ang / 2.0
-    return f"""
-    N 0.0 0.0 {-z}
-    N 0.0 0.0 {+z}
-    """
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="N2 CAS scan using dense CCIK")
     parser.add_argument(

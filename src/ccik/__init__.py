@@ -4,7 +4,7 @@ This package exposes:
 - `ccik_ground_energy_dense`: dense CCIK ground-state energy in a given Hamiltonian.
 - `build_cas_hamiltonian_pyscf`: helper to build CAS Hamiltonians using PySCF.
 
-The code is extracted from the original script `krylov cipsi primitive.py` so you can
+The code is extracted from the original scripts in `legacy/` so you can
 import and run sweeps from external driver scripts.
 
 For a mapping from PDF equations to implementation lines, see:

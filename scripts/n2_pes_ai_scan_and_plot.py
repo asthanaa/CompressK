@@ -41,18 +41,9 @@ from ccik import (  # noqa: E402
 )
 from ccik.config import cas_spec_from_dict, load_config  # noqa: E402
 
-
-def make_n2_atom(R_ang: float) -> str:
-    z = R_ang / 2.0
-    return f"""
-    N 0.0 0.0 {-z}
-    N 0.0 0.0 {+z}
-    """
-
-
+from n2_utils import make_n2_atom, safe_log_err
 def _safe_log_err(delta: np.ndarray, floor: float = 1e-16) -> np.ndarray:
-    err = np.abs(np.asarray(delta, dtype=float))
-    return np.maximum(err, float(floor))
+    return safe_log_err(delta, floor=float(floor))
 
 
 def main() -> None:

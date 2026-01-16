@@ -1,48 +1,30 @@
-# ccik
+# CompressK / `ccik`
 
-This repo contains a reusable Python package and driver scripts for running a dense (full-CAS matvec) implementation of a CCIK/CCIK-style “compressed Krylov + selected configurations” algorithm.
-
-## Layout
-
-- `src/ccik/`: importable package (algorithm + PySCF helpers)
-- `scripts/`: runnable drivers (example scans)
-- `configs/`: editable TOML configs (no code edits required)
-- `experiments/`: legacy one-off notebooks/scripts (if present)
-
-## Quick start (no install)
-
-From repo root:
-
-```bash
-python scripts/n2_cas_scan.py
-```
-
-Edit parameters in:
-
-- packaged default: `src/ccik/defaults/config.toml`
-
-To override defaults, pass your own file:
-
-```bash
-python scripts/n2_cas_scan.py --config configs/my_config.toml
-```
-
-## Install (editable)
-
-```bash
-pip install -e .
-```
-
-Optional dependencies:
-
-- `pip install -e .[quantum]` (PySCF)
-- `pip install -e .[plot]` (matplotlib)
-- `pip install -e .[all]`
+This repo contains an importable Python package (`src/ccik/`) plus runnable driver scripts (`scripts/`) for running **compressed Krylov + selected-configuration matvecs** algorithms (CCIK family) and related variants (thick restart, FCIQMC-inspired selection, AI-guided selection, CIPSI-var).
 
 ## Documentation
 
-See `krylov_cipsi.pdf` for the theory, and `src/ccik/core.py` for equation-to-code mapping comments.
+- Full docs index: `docs/index.md`
+- Quickstart: `docs/quickstart.md`
+- Config reference: `docs/configuration.md`
 
-Additional algorithms (optional):
-- Thick restart (reuse Ritz vectors): `src/ccik/thick_restart.py`
-- CIPSI variational-only (no PT2): `src/ccik/cipsi.py`
+## Recommended entry points (current)
+
+- Package code: `src/ccik/`
+	- Algorithm/PDF mapping overview: `src/ccik/README.md`
+
+- Driver scripts: `scripts/`
+	- N2 CAS scan (multiple methods): `python scripts/n2_cas_scan.py --config <toml>`
+	- Step-by-step run instructions: `scripts/README.md`
+	- Sample N2 input file: `tests/n2_sample.toml`
+
+## Legacy scripts
+
+Older, pre-package one-off scripts are kept under `legacy/` for historical reference.
+
+For convenience, compatibility shims remain at the repo root:
+
+- `krylov_cipsi.py`
+- `krylov cipsi primitive.py`
+
+New work should use `src/ccik/` and `scripts/`.

@@ -67,6 +67,36 @@ def apply_mask(ci: np.ndarray, mask: np.ndarray) -> np.ndarray:
     out[mask] = ci[mask]
     return out
 
+def topk_positive_flat_indices(arr: np.ndarray, k: int) -> np.ndarray:
+    """Return flat indices of up to k entries with arr>0 and largest values.
+
+    The returned indices are not sorted.
+    """
+
+    if k <= 0:
+        return np.asarray([], dtype=int)
+
+    flat = np.asarray(arr).ravel()
+    pos = np.where(flat > 0)[0]
+    if pos.size == 0:
+        return np.asarray([], dtype=int)
+
+    nsel = min(int(k), int(pos.size))
+    vals = flat[pos]
+    top_local = np.argpartition(vals, -nsel)[-nsel:]
+    return pos[top_local]
+
+
+def topk_positive_mask(arr: np.ndarray, k: int) -> np.ndarray:
+    """Return a boolean mask selecting top-k entries with arr>0."""
+
+    flat_idx = topk_positive_flat_indices(arr, int(k))
+    mask = np.zeros_like(np.asarray(arr), dtype=bool)
+    if flat_idx.size == 0:
+        return mask
+    mask.ravel()[flat_idx] = True
+    return mask
+
 
 def occ_list_to_bitstring(occ: list[int]) -> int:
     s = 0
@@ -168,18 +198,7 @@ def ccik_ground_energy_dense(
         score_ext = score.copy()
         score_ext[supp_k] = 0.0
 
-        select_mask = np.zeros_like(score_ext, dtype=bool)
-        if params.nadd is not None and params.nadd > 0:
-            flat = score_ext.ravel()
-            pos = np.where(flat > 0)[0]
-            if pos.size > 0:
-                nsel = min(params.nadd, pos.size)
-                vals = flat[pos]
-                top_local = np.argpartition(vals, -nsel)[-nsel:]
-                idx = pos[top_local]
-                sflat = np.zeros_like(flat, dtype=bool)
-                sflat[idx] = True
-                select_mask = sflat.reshape(score_ext.shape)
+        select_mask = topk_positive_mask(score_ext, int(params.nadd or 0))
 
         topv_mask = (
             compress_keep_top_mask(v_full, nkeep=params.Kv)

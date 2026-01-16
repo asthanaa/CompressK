@@ -5,7 +5,15 @@ from typing import Any, Protocol
 
 import numpy as np
 
-from .core import apply_mask, compress_keep_top_mask, generalized_eigh, inner, normalize, occ_list_to_bitstring
+from .core import (
+    apply_mask,
+    compress_keep_top_mask,
+    generalized_eigh,
+    inner,
+    normalize,
+    occ_list_to_bitstring,
+    topk_positive_flat_indices,
+)
 
 # Determinant identifier in this codebase: (alpha_addr, beta_addr)
 DetId = tuple[int, int]
@@ -67,14 +75,9 @@ class CIPSISelector:
             # Full-space ranking (only for small systems).
             score_ext = score.copy()
             score_ext[in_support] = 0.0
-            flat = score_ext.ravel()
-            pos = np.where(flat > 0)[0]
-            if pos.size == 0:
+            idx = topk_positive_flat_indices(score_ext, nadd)
+            if idx.size == 0:
                 return set()
-            nsel = min(nadd, int(pos.size))
-            vals = flat[pos]
-            top_local = np.argpartition(vals, -nsel)[-nsel:]
-            idx = pos[top_local]
             ia, ib = np.unravel_index(idx, score_ext.shape)
             return {(int(a), int(b)) for a, b in zip(ia, ib)}
 

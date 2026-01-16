@@ -1,6 +1,24 @@
 
 ## Package-style usage
 
+## Documentation
+
+For thorough docs (quickstart, config reference, algorithms, module map, ML components, development), see:
+
+- `docs/index.md`
+
+## Recommended entry points (current)
+
+If you just want to run the algorithms end-to-end using a TOML config, start here:
+
+- Step-by-step run instructions: `scripts/README.md`
+- Sample N2 config used in the docs: `tests/n2_sample.toml`
+- Main driver used by that example: `scripts/n2_cas_scan.py`
+
+### Legacy scripts
+
+Older one-off scripts live in `legacy/`. For backward compatibility, the repo root still contains small shim wrappers (e.g. `krylov_cipsi.py`) that delegate into `legacy/`.
+
 Reusable code lives in `src/ccik/`.
 
 See `src/ccik/README.md` for an algorithm description mapped to `krylov_cipsi.pdf`.

@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 
-from .core import apply_mask, compress_keep_top_mask, generalized_eigh, inner, normalize, occ_list_to_bitstring
+from .core import (
+    apply_mask,
+    compress_keep_top_mask,
+    generalized_eigh,
+    inner,
+    normalize,
+    occ_list_to_bitstring,
+    topk_positive_mask,
+)
 from .params import FCIQMCKrylovParams
 
 
@@ -280,17 +288,7 @@ def ccik_ground_energy_fciqmc_krylov(
         score_ext[supp_k] = 0.0
 
         select_mask = np.zeros_like(score_ext, dtype=bool)
-        if int(params.nadd) > 0:
-            flat = score_ext.ravel()
-            pos = np.where(flat > 0)[0]
-            if pos.size > 0:
-                nsel = min(int(params.nadd), int(pos.size))
-                vals = flat[pos]
-                top_local = np.argpartition(vals, -nsel)[-nsel:]
-                idx = pos[top_local]
-                sflat = np.zeros_like(flat, dtype=bool)
-                sflat[idx] = True
-                select_mask = sflat.reshape(score_ext.shape)
+        select_mask = topk_positive_mask(score_ext, int(params.nadd))
 
         topv_mask = (
             compress_keep_top_mask(v_full, nkeep=params.Kv)

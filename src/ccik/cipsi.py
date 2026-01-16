@@ -9,6 +9,7 @@ from .core import (
     inner,
     normalize,
     occ_list_to_bitstring,
+    topk_positive_mask,
 )
 from .params import CIPSIParams
 
@@ -207,17 +208,7 @@ def cipsi_dense_variational(
         score_ext[S] = 0.0
 
         add_mask = np.zeros_like(S, dtype=bool)
-        if params.nadd is not None and params.nadd > 0:
-            flat = score_ext.ravel()
-            pos = np.where(flat > 0)[0]
-            if pos.size > 0:
-                nsel = min(params.nadd, pos.size)
-                vals = flat[pos]
-                top_local = np.argpartition(vals, -nsel)[-nsel:]
-                idx = pos[top_local]
-                sflat = np.zeros_like(flat, dtype=bool)
-                sflat[idx] = True
-                add_mask = sflat.reshape(S.shape)
+        add_mask = topk_positive_mask(score_ext, int(params.nadd or 0))
 
         topv_mask = (
             compress_keep_top_mask(v_full, nkeep=params.Kv)
