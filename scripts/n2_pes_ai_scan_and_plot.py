@@ -71,6 +71,24 @@ def main() -> None:
         help="Number of scan points (inclusive endpoints). Overrides config.",
     )
     parser.add_argument(
+        "--Rsplit",
+        type=float,
+        default=None,
+        help="Optional split point (Å) for a 2-segment nonuniform grid.",
+    )
+    parser.add_argument(
+        "--n1",
+        type=int,
+        default=None,
+        help="If --Rsplit is set: number of points in [Rmin, Rsplit) (excludes Rsplit).",
+    )
+    parser.add_argument(
+        "--n2",
+        type=int,
+        default=None,
+        help="If --Rsplit is set: number of points in [Rsplit, Rmax] (includes endpoints).",
+    )
+    parser.add_argument(
         "--out",
         default=str(_ROOT / "out_n2_pes_ai"),
         help="Output prefix (writes <out>.csv and <out>.png)",
@@ -93,9 +111,23 @@ def main() -> None:
     scan = cfg.get("scan", {})
     R_min = float(scan.get("R_min", 0.8)) if args.Rmin is None else float(args.Rmin)
     R_max = float(scan.get("R_max", 3.0)) if args.Rmax is None else float(args.Rmax)
-    n_points = int(args.npoints)
+    if args.Rsplit is None:
+        n_points = int(args.npoints)
+        Rs = np.linspace(R_min, R_max, n_points)
+    else:
+        R_split = float(args.Rsplit)
+        if not (R_min < R_split < R_max):
+            raise ValueError(f"Expected Rmin < Rsplit < Rmax, got Rmin={R_min}, Rsplit={R_split}, Rmax={R_max}")
 
-    Rs = np.linspace(R_min, R_max, n_points)
+        n1 = int(args.n1) if args.n1 is not None else 5
+        n2 = int(args.n2) if args.n2 is not None else 5
+        if n1 <= 0 or n2 <= 0:
+            raise ValueError(f"Expected n1>0 and n2>0, got n1={n1}, n2={n2}")
+
+        # Segment 1 excludes R_split so we don't duplicate it.
+        Rs1 = np.linspace(R_min, R_split, n1, endpoint=False)
+        Rs2 = np.linspace(R_split, R_max, n2, endpoint=True)
+        Rs = np.concatenate([Rs1, Rs2], axis=0)
 
     molcfg = cfg.get("molecule", {})
     basis = str(molcfg.get("basis", "6-31g"))
@@ -131,7 +163,7 @@ def main() -> None:
 
     rows: list[tuple[float, float, float, float, float, float]] = []
 
-    print(f"Scanning N2: R in [{R_min:.3f}, {R_max:.3f}] Å with n_points={n_points}")
+    print(f"Scanning N2: R in [{R_min:.3f}, {R_max:.3f}] Å with n_points={int(Rs.size)}")
     print("Methods: CAS-FCI (ref), AI-selector (CIPSI backend), AI-selector (GNN backend)")
 
     for R in Rs:

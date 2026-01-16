@@ -49,6 +49,11 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Train FeatureMLP on AI-selector candidate features")
     p.add_argument("--data", required=True, help="Path to .npz with X,y")
     p.add_argument("--out", required=True, help="Output checkpoint .pt")
+    p.add_argument(
+        "--init",
+        default=None,
+        help="Optional FeatureMLP checkpoint to initialize from (transfer learning / fine-tuning).",
+    )
     p.add_argument("--epochs", type=int, default=20)
     p.add_argument("--batch-size", type=int, default=1024)
     p.add_argument("--lr", type=float, default=1e-3)
@@ -60,7 +65,12 @@ def main() -> None:
     p.add_argument("--topk", type=int, default=256)
     args = p.parse_args()
 
-    from ccik.feature_mlp import FeatureMLP, FeatureMLPConfig, save_feature_mlp_checkpoint
+    from ccik.feature_mlp import (
+        FeatureMLP,
+        FeatureMLPConfig,
+        load_feature_mlp_checkpoint,
+        save_feature_mlp_checkpoint,
+    )
 
     torch = _require_torch()
 
@@ -86,9 +96,18 @@ def main() -> None:
     Xva = torch.tensor(X[val_idx], dtype=torch.float32) if n_val > 0 else None
     yva = torch.tensor(y[val_idx], dtype=torch.float32) if n_val > 0 else None
 
-    model = FeatureMLP(
-        FeatureMLPConfig(in_dim=int(X.shape[1]), hidden_dim=int(args.hidden_dim), depth=int(args.depth))
-    ).to(args.device)
+    if args.init:
+        model = load_feature_mlp_checkpoint(args.init, map_location="cpu").to(args.device)
+        # Sanity check on input feature dimension.
+        if int(getattr(model.config, "in_dim", -1)) != int(X.shape[1]):
+            raise ValueError(
+                f"Init checkpoint expects in_dim={getattr(model.config, 'in_dim', None)} but data has in_dim={int(X.shape[1])}"
+            )
+        print(f"Initialized from: {args.init}")
+    else:
+        model = FeatureMLP(
+            FeatureMLPConfig(in_dim=int(X.shape[1]), hidden_dim=int(args.hidden_dim), depth=int(args.depth))
+        ).to(args.device)
 
     opt = torch.optim.Adam(model.parameters(), lr=float(args.lr))
 
@@ -126,11 +145,8 @@ def main() -> None:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    save_feature_mlp_checkpoint(
-        out_path,
-        model=model,
-        config=FeatureMLPConfig(in_dim=int(X.shape[1]), hidden_dim=int(args.hidden_dim), depth=int(args.depth)),
-    )
+    # Save using the model's current config (including when fine-tuning from --init).
+    save_feature_mlp_checkpoint(out_path, model=model, config=model.config)
     print(f"saved: {out_path}")
 
 
