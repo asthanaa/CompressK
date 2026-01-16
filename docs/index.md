@@ -1,6 +1,6 @@
 # CompressK / `ccik` Documentation
 
-This `docs/` folder is the “source of truth” documentation set for the repository.
+This folder is the “source of truth” documentation set for the repository.
 
 Note: the importable package name is `ccik` for historical reasons, but the repo implements multiple methods:
 
@@ -12,20 +12,20 @@ Note: the importable package name is `ccik` for historical reasons, but the repo
 
 ## Start here
 
-- **Quickstart (run the sample N2 input):** `docs/quickstart.md`
-- **Configuration reference (TOML schema):** `docs/configuration.md`
+- Quickstart (run the sample N2 input): [quickstart.md](quickstart.md)
+- Configuration reference (TOML schema): [configuration.md](configuration.md)
 
 ## Concepts
 
-- **Algorithms (CCIK, thick restart, CIPSI-var, FCIQMC-Krylov, AI-selector):** `docs/algorithms.md`
-- **Repository architecture + module map:** `docs/architecture.md`
-- **Public Python API surface:** `docs/api.md`
+- Algorithms (CCIK, thick restart, CIPSI-var, FCIQMC-Krylov, AI-selector): [algorithms.md](algorithms.md)
+- Repository architecture + module map: [architecture.md](architecture.md)
+- Public Python API surface: [api.md](api.md)
 
 ## Advanced / contributor docs
 
-- **ML components (OperatorNN, FeatureMLP, training scripts):** `docs/ml.md`
-- **Development & testing:** `docs/development.md`
-- **Legacy scripts and compatibility shims:** `docs/legacy.md`
+- ML components (OperatorNN, FeatureMLP, training scripts): [ml.md](ml.md)
+- Development & testing: [development.md](development.md)
+- Legacy scripts and compatibility shims: [legacy.md](legacy.md)
 
 ## Pointers to existing docs
 

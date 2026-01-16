@@ -85,6 +85,6 @@ methods = ["fciqmckrylov", "ccik_thick"]
 
 ## Next
 
-- Configuration reference: `docs/configuration.md`
-- Algorithm details: `docs/algorithms.md`
-- Module map: `docs/architecture.md`
+- Configuration reference: [configuration.md](configuration.md)
+- Algorithm details: [algorithms.md](algorithms.md)
+- Module map: [architecture.md](architecture.md)

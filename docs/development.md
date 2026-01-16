@@ -49,7 +49,28 @@ Optional extras (see `pyproject.toml`):
 
 - `quantum`: PySCF
 - `plot`: matplotlib
+- `docs`: MkDocs Material (hosted documentation site)
 - `test`: pytest
+
+## Documentation site (MkDocs)
+
+Install docs dependencies:
+
+```bash
+pip install -e ".[docs]"
+```
+
+Serve locally (live reload):
+
+```bash
+mkdocs serve
+```
+
+Build static site into `site/`:
+
+```bash
+mkdocs build
+```
 
 ## Adding new drivers
 

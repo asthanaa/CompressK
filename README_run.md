@@ -5,6 +5,7 @@
 
 For thorough docs (quickstart, config reference, algorithms, module map, ML components, development), see:
 
+- Hosted docs (GitHub Pages): https://asthanaa.github.io/CompressK/
 - `docs/index.md`
 
 ## Recommended entry points (current)

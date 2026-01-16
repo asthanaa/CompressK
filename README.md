@@ -4,7 +4,8 @@ This repo contains an importable Python package (`src/ccik/`) plus runnable driv
 
 ## Documentation
 
-- Full docs index: `docs/index.md`
+- Hosted docs (GitHub Pages): https://asthanaa.github.io/CompressK/
+- Full docs index (in-repo): `docs/index.md`
 - Quickstart: `docs/quickstart.md`
 - Config reference: `docs/configuration.md`
 

@@ -133,4 +133,4 @@ Provided selector implementations:
 - `CIPSISelector`: deterministic score-based selection (dense full-space or candidate-pool based)
 - `GNNSelector`: ranks candidates via a PyTorch model if provided; otherwise falls back to a deterministic heuristic
 
-See `docs/ml.md` for ML-specific details.
+See [ml.md](ml.md) for ML-specific details.

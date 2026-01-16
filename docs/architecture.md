@@ -96,4 +96,4 @@ A complete “runner” that:
   - runs one or more approximate methods
   - writes a CSV
 
-See also `scripts/README.md` and `docs/quickstart.md`.
+See also `scripts/README.md` and [quickstart.md](quickstart.md).

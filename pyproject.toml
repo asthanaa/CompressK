@@ -22,11 +22,16 @@ quantum = [
 plot = [
   "matplotlib",
 ]
+docs = [
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "mkdocs-autorefs",
+]
 test = [
   "pytest",
 ]
 all = [
-  "ccik[quantum,plot,test]",
+  "ccik[quantum,plot,docs,test]",
 ]
 
 [tool.setuptools]

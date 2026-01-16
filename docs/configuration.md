@@ -166,4 +166,4 @@ Model checkpoint path:
 
 The selector can run with no model (deterministic fallback) or use a PyTorch model.
 
-See `docs/ml.md` for details.
+See [ml.md](ml.md) for details.

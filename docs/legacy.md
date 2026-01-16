@@ -24,6 +24,6 @@ New work should use:
 
 ## Where to look instead
 
-- Run instructions: `scripts/README.md` and `docs/quickstart.md`
+- Run instructions: `scripts/README.md` and [quickstart.md](quickstart.md)
 - Algorithm mapping to the PDF: `src/ccik/README.md`
-- Config schema: `docs/configuration.md`
+- Config schema: [configuration.md](configuration.md)
