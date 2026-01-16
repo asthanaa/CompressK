@@ -23,3 +23,5 @@ plots*/
 *.png
 *.csv
 data/
+data/
+*.npz
