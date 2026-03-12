@@ -1,31 +1,37 @@
 # CompressK / `ccik`
 
-This repo contains an importable Python package (`src/ccik/`) plus runnable driver scripts (`scripts/`) for running **compressed Krylov + selected-configuration matvecs** algorithms (CCIK family) and related variants (thick restart, FCIQMC-inspired selection, AI-guided selection, CIPSI-var).
+[![Docs](https://img.shields.io/badge/Docs-Live%20Site-0A7EA4?style=for-the-badge)](https://asthanaa.github.io/CompressK/)
+[![Quickstart](https://img.shields.io/badge/Docs-Quickstart-1F6FEB?style=for-the-badge)](https://asthanaa.github.io/CompressK/quickstart.html)
+[![Algorithms](https://img.shields.io/badge/Docs-Algorithms-2DA44E?style=for-the-badge)](https://asthanaa.github.io/CompressK/algorithms.html)
+[![Configuration](https://img.shields.io/badge/Docs-Configuration-BD561D?style=for-the-badge)](https://asthanaa.github.io/CompressK/configuration.html)
+
+This repository contains a Python package in `src/ccik` and runnable drivers in `scripts` for three compressed-Krylov solvers:
+
+- `ccik`: baseline dense CCIK
+- `ccik_thick`: CCIK with thick restart
+- `ccik_stochastic`: CCIK with stochastic candidate discovery
 
 ## Documentation
 
-- Hosted docs (GitHub Pages): https://asthanaa.github.io/CompressK/
-- Full docs index (in-repo): `docs/index.md`
+- Hosted docs: https://asthanaa.github.io/CompressK/
+- In-repo docs index: `docs/index.md`
 - Quickstart: `docs/quickstart.md`
-- Config reference: `docs/configuration.md`
+- Configuration reference: `docs/configuration.md`
+- Algorithms overview: `docs/algorithms.md`
 
-## Recommended entry points (current)
+## Algorithm docs
 
-- Package code: `src/ccik/`
-	- Algorithm/PDF mapping overview: `src/ccik/README.md`
+- `ccik`: https://asthanaa.github.io/CompressK/algorithms.html#ccik
+- `ccik_thick`: https://asthanaa.github.io/CompressK/algorithms.html#ccik_thick
+- `ccik_stochastic`: https://asthanaa.github.io/CompressK/algorithms.html#ccik_stochastic
+- Full API reference: https://asthanaa.github.io/CompressK/api.html
 
-- Driver scripts: `scripts/`
-	- N2 CAS scan (multiple methods): `python scripts/n2_cas_scan.py --config <toml>`
-	- Step-by-step run instructions: `scripts/README.md`
-	- Sample N2 input file: `tests/n2_sample.toml`
+## Recommended entry points
 
-## Legacy scripts
+- Main N2 scan driver: `python scripts/n2_cas_scan.py --config <toml>`
+- N2 PES plot driver: `python scripts/n2_pes_scan_and_plot.py --config <toml>`
+- Sample config: `tests/n2_sample.toml`
 
-Older, pre-package one-off scripts are kept under `legacy/` for historical reference.
+## Current scope
 
-For convenience, compatibility shims remain at the repo root:
-
-- `krylov_cipsi.py`
-- `krylov cipsi primitive.py`
-
-New work should use `src/ccik/` and `scripts/`.
+The repository has been simplified to the three solver variants above. Neural-network support-selection code and its training utilities have been removed from the active codebase.

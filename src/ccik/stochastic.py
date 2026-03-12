@@ -11,7 +11,7 @@ from .core import (
     occ_list_to_bitstring,
     topk_positive_mask,
 )
-from .params import FCIQMCKrylovParams
+from .params import CCIKStochasticParams
 
 
 def _bit_to_occ(bitstr: int, norb: int) -> list[int]:
@@ -52,7 +52,7 @@ def _spawn_once(
     p_double: float,
     mixed_double_weight: float,
 ) -> tuple[list[int], list[int], list[int], list[int], float]:
-    """Propose a single connected move and return (holes_a, parts_a, holes_b, parts_b, p_gen)."""
+    """Propose one connected excitation and return its generation probability."""
 
     nocc_a = len(occ_a)
     nvir_a = len(vir_a)
@@ -65,7 +65,7 @@ def _spawn_once(
     n_double_bb = (nocc_b * (nocc_b - 1) // 2) * (nvir_b * (nvir_b - 1) // 2)
     n_double_ab = nocc_a * nvir_a * nocc_b * nvir_b
 
-    do_double = (rng.random() < p_double)
+    do_double = rng.random() < p_double
     if do_double and (n_double_aa + n_double_bb + n_double_ab) == 0:
         do_double = False
     if (not do_double) and (n_single_a + n_single_b) == 0:
@@ -85,7 +85,6 @@ def _spawn_once(
         p_gen = (1.0 - p_double) * (1.0 - pa) * (1.0 / nocc_b) * (1.0 / nvir_b)
         return [], [], [hole], [part], float(p_gen)
 
-    # doubles
     w_aa = float(n_double_aa)
     w_bb = float(n_double_bb)
     w_ab = float(n_double_ab) * float(mixed_double_weight)
@@ -106,7 +105,6 @@ def _spawn_once(
         p_gen = p_double * (w_bb / wtot) * (1.0 / (nocc_b * (nocc_b - 1) / 2.0)) * (1.0 / (nvir_b * (nvir_b - 1) / 2.0))
         return [], [], [i, j], [a, b], float(p_gen)
 
-    # mixed
     hole_a = occ_a[int(rng.integers(0, nocc_a))]
     part_a = vir_a[int(rng.integers(0, nvir_a))]
     hole_b = occ_b[int(rng.integers(0, nocc_b))]
@@ -115,26 +113,19 @@ def _spawn_once(
     return [hole_a], [part_a], [hole_b], [part_b], float(p_gen)
 
 
-def _fciqmc_discover_candidates_mask(
+def _discover_candidates_mask(
     *,
     norb: int,
     nelec: tuple[int, int],
     qk: np.ndarray,
-    params: FCIQMCKrylovParams,
+    params: CCIKStochasticParams,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """Return a boolean mask of determinants discovered via walker spawning.
-
-    Walkers select parent determinants from the current Krylov vector support and propose
-    random connected excitations (single/double). Only the *visited* determinants are marked.
-
-    This replaces the full-basis scan used by deterministic CIPSI scoring.
-    """
+    """Return the determinant mask discovered by stochastic excitation proposals."""
 
     from pyscf.fci import cistring
 
     neleca, nelecb = nelec
-
     nz = np.argwhere(qk != 0)
     if nz.size == 0 or int(params.n_walkers) <= 0:
         return np.zeros_like(qk, dtype=bool)
@@ -150,9 +141,6 @@ def _fciqmc_discover_candidates_mask(
     p_parent = qvals / tot
 
     cand = np.zeros_like(qk, dtype=bool)
-
-    # Cache parent decoding because walkers repeatedly pick parents from a small support.
-    # This avoids calling addr2str and rebuilding occ/vir lists millions of times.
     parent_cache: dict[tuple[int, int], tuple[int, int, list[int], list[int], list[int], list[int]]] = {}
     addr2str = cistring.addr2str
     str2addr = cistring.str2addr
@@ -160,7 +148,7 @@ def _fciqmc_discover_candidates_mask(
     nwalk = int(params.n_walkers)
     for w in range(nwalk):
         if params.verbose and nwalk >= 20000 and (w % 5000) == 0 and w > 0:
-            print(f"      [FCIQMC-KRYLOV] walkers: {w}/{nwalk}")
+            print(f"      [CCIK-STOCHASTIC] walkers: {w}/{nwalk}")
 
         t = int(rng.choice(len(p_parent), p=p_parent))
         ia = int(idx_a[t])
@@ -175,7 +163,6 @@ def _fciqmc_discover_candidates_mask(
                 continue
             stra = int(stra_raw)
             strb = int(strb_raw)
-
             occ_a = _bit_to_occ(stra, norb)
             occ_b = _bit_to_occ(strb, norb)
             vir_a = _bit_to_vir(stra, norb)
@@ -184,7 +171,7 @@ def _fciqmc_discover_candidates_mask(
         else:
             stra, strb, occ_a, vir_a, occ_b, vir_b = cached
 
-        holes_a, parts_a, holes_b, parts_b, _pgen = _spawn_once(
+        holes_a, parts_a, holes_b, parts_b, _ = _spawn_once(
             rng,
             occ_a=occ_a,
             vir_a=vir_a,
@@ -196,18 +183,17 @@ def _fciqmc_discover_candidates_mask(
         if len(holes_a) + len(holes_b) == 0:
             continue
 
-        # apply excitation (no need for phase for discovery)
         stra2 = stra
         for h in holes_a:
-            stra2 ^= (1 << int(h))
+            stra2 ^= 1 << int(h)
         for p in parts_a:
-            stra2 ^= (1 << int(p))
+            stra2 ^= 1 << int(p)
 
         strb2 = strb
         for h in holes_b:
-            strb2 ^= (1 << int(h))
+            strb2 ^= 1 << int(h)
         for p in parts_b:
-            strb2 ^= (1 << int(p))
+            strb2 ^= 1 << int(p)
 
         ia2 = int(str2addr(norb, neleca, stra2))
         ib2 = int(str2addr(norb, nelecb, strb2))
@@ -216,23 +202,25 @@ def _fciqmc_discover_candidates_mask(
     return cand
 
 
-def ccik_ground_energy_fciqmc_krylov(
+def ccik_ground_energy_stochastic(
     h1: np.ndarray,
     eri8: np.ndarray,
     norb: int,
     nelec: tuple[int, int],
     *,
-    params: FCIQMCKrylovParams | None = None,
+    params: CCIKStochasticParams | None = None,
     stats: dict[str, float] | dict[str, int] | None = None,
 ) -> float:
-    """FCIQMC-Krylov: walker-discovered candidate selection for compressed Krylov.
+    """Run CCIK with stochastic candidate discovery.
 
-    Walkers *discover* connected determinants stochastically. For the visited set, we then
-    compute the usual perturbative/CIPSI score using the exact matvec coefficients v=H|q>.
+    The Krylov projection, score formula, and Ritz solve remain identical to baseline CCIK.
+    The only approximation changed here is how the external candidate pool is discovered:
+    instead of scanning the full determinant space, stochastic excitation proposals identify
+    a smaller set of connected determinants to rank.
     """
 
     if params is None:
-        params = FCIQMCKrylovParams()
+        params = CCIKStochasticParams()
 
     from pyscf.fci import cistring, direct_spin1
 
@@ -242,13 +230,11 @@ def ccik_ground_energy_fciqmc_krylov(
 
     hdiag = direct_spin1.make_hdiag(h1, eri8, norb, nelec)
     hdiag = np.asarray(hdiag, dtype=float).reshape(na, nb)
-
     h2eff = direct_spin1.absorb_h1e(h1, eri8, norb, nelec, fac=0.5)  # type: ignore[arg-type]
 
     def H_contract(ci: np.ndarray) -> np.ndarray:
         return np.asarray(direct_spin1.contract_2e(h2eff, ci, norb, nelec))
 
-    # HF determinant as start
     occ_a = list(range(neleca))
     occ_b = list(range(nelecb))
     addr_a = int(cistring.str2addr(norb, neleca, occ_list_to_bitstring(occ_a)))
@@ -258,7 +244,6 @@ def ccik_ground_energy_fciqmc_krylov(
     q0 = normalize(q0)
 
     rng = np.random.default_rng(None if params.seed is None else int(params.seed))
-
     Q: list[np.ndarray] = [q0]
     supports: list[np.ndarray] = [compress_keep_top_mask(q0, nkeep=params.nkeep)]
 
@@ -269,30 +254,18 @@ def ccik_ground_energy_fciqmc_krylov(
         v_full = H_contract(qk)
         Ek = inner(qk, v_full)
 
-        # Discover candidate determinants via FCIQMC-style spawning from support(qk)
-        cand_mask = _fciqmc_discover_candidates_mask(
-            norb=norb,
-            nelec=nelec,
-            qk=apply_mask(qk, supp_k),
-            params=params,
-            rng=rng,
-        )
+        cand_mask = _discover_candidates_mask(norb=norb, nelec=nelec, qk=qk, params=params, rng=rng)
+        cand_mask[supp_k] = False
 
-        # Score ONLY the visited candidates (perturbative/CIPSI score)
         denom = np.abs(Ek - hdiag)
         denom = np.where(denom < float(params.eps_denom), float(params.eps_denom), denom)
         score = (np.abs(v_full) ** 2) / denom
+        score_masked = np.where(cand_mask, score, 0.0)
 
-        score_ext = np.zeros_like(score)
-        score_ext[cand_mask] = score[cand_mask]
-        score_ext[supp_k] = 0.0
-
-        select_mask = np.zeros_like(score_ext, dtype=bool)
-        select_mask = topk_positive_mask(score_ext, int(params.nadd))
-
+        select_mask = topk_positive_mask(score_masked, int(params.nadd or 0))
         topv_mask = (
             compress_keep_top_mask(v_full, nkeep=params.Kv)
-            if (params.Kv is not None and int(params.Kv) > 0)
+            if (params.Kv is not None and params.Kv > 0)
             else None
         )
 
@@ -301,20 +274,22 @@ def ccik_ground_energy_fciqmc_krylov(
             supp_v |= topv_mask
 
         if params.verbose:
+            v2_total = float(np.sum(np.abs(v_full) ** 2))
+            v2_kept = float(np.sum(np.abs(v_full[supp_v]) ** 2))
+            tail_frac = (max(v2_total - v2_kept, 0.0)) / max(v2_total, 1e-30)
             print(
-                f"    k={k:02d} E(q)={Ek:+.10f} visited={int(np.sum(cand_mask))} sel={int(np.sum(select_mask))} supp_v={int(np.sum(supp_v))}"
+                f"    k={k:02d} E(q)={Ek:+.10f} tail≈{tail_frac:.2e} discovered={int(cand_mask.sum())} supp_v={int(supp_v.sum())}"
             )
 
         v = apply_mask(v_full, supp_v)
-
         r = v.copy()
-        for j in range(k + 1):
-            r -= inner(Q[j], r) * Q[j]
+        for qj in Q:
+            r -= inner(qj, r) * qj
 
         nr = np.linalg.norm(r.ravel())
         if nr < float(getattr(params, "orth_tol", 1e-12)):
             if params.verbose:
-                print(f"[FCIQMC-KRYLOV] breakdown at k={k}")
+                print(f"[CCIK-STOCHASTIC] breakdown at k={k}")
             break
 
         q_next = r / nr
@@ -327,7 +302,6 @@ def ccik_ground_energy_fciqmc_krylov(
     m_eff = len(Q)
     Hproj = np.zeros((m_eff, m_eff))
     Sproj = np.zeros((m_eff, m_eff))
-
     Hq = [H_contract(Q[j]) for j in range(m_eff)]
     for i in range(m_eff):
         for j in range(m_eff):
@@ -337,16 +311,14 @@ def ccik_ground_energy_fciqmc_krylov(
     evals, _ = generalized_eigh(Hproj, Sproj)
 
     if stats is not None:
-        if len(supports) > 0:
-            union = supports[0].copy()
-            for s in supports[1:]:
-                union |= s
-            stats["m_eff"] = int(m_eff)
-            stats["ndet_union"] = int(np.sum(union))
-            stats["ndet_sum"] = int(sum(int(np.sum(s)) for s in supports))
-        else:
-            stats["m_eff"] = int(m_eff)
-            stats["ndet_union"] = 0
-            stats["ndet_sum"] = 0
+        union = np.zeros_like(Q[0], dtype=bool)
+        ndet_sum = 0
+        for q in Q:
+            supp = q != 0
+            union |= supp
+            ndet_sum += int(np.count_nonzero(supp))
+        stats["m_eff"] = int(m_eff)
+        stats["ndet_sum"] = int(ndet_sum)
+        stats["ndet_union"] = int(np.count_nonzero(union))
 
     return float(evals[0])

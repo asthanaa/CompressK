@@ -56,7 +56,6 @@ def _infer_ncore(nelectron: int, nelecas: int, *, spin: int) -> int:
 
 
 def _fci_singlet_energy_and_spin(
-) -> tuple[float, float, float]:
     *,
     h1: np.ndarray,
     eri8: np.ndarray,
@@ -244,4 +243,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

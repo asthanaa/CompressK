@@ -1,54 +1,54 @@
 # Public API
 
-This project uses a `src/` layout; the importable package name is `ccik`.
+The package exposes a small top-level API from `src/ccik/__init__.py`.
 
-The package exports a convenient surface from `src/ccik/__init__.py`. For stable imports in external scripts, prefer importing from `ccik` (top-level) rather than internal modules.
+## Solvers
 
-## Core algorithms
+- `ccik_ground_energy_dense(...)`
+  Meaning: baseline dense CCIK solver.
+- `ccik_ground_energy_dense_thick_restart(...)`
+  Meaning: dense CCIK with thick restart.
+- `ccik_ground_energy_stochastic(...)`
+  Meaning: dense CCIK with stochastic candidate discovery.
 
-- `ccik_ground_energy_dense(...)` — dense CCIK baseline
-- `ccik_ground_energy_dense_thick_restart(...)` — thick restart variant
-- `cipsi_dense_variational(...)` — CIPSI variational-only
-- `ccik_ground_energy_fciqmc_krylov(...)` — FCIQMC-inspired selection
-- `ccik_ground_energy_ai_selector_krylov(...)` — AI-selector Krylov
+All three return the lowest electronic CAS energy. They do not include `ecore`; the driver scripts add that offset.
 
-## CAS/PySCF helpers
+## Hamiltonian helpers
 
 - `make_mol_pyscf(...)`
+  Meaning: construct a PySCF molecule object.
 - `build_cas_hamiltonian_pyscf(...)`
+  Meaning: build the CAS one-body integrals, two-body integrals, core offset, and electron counts.
 - `exact_cas_fci_energy_pyscf(...)`
+  Meaning: compute the exact CAS-FCI reference energy for comparison.
 
 ## Parameter dataclasses
 
 - `CCIKParams`
+  Used by `ccik_ground_energy_dense`.
 - `CCIKThickRestartParams`
-- `CIPSIParams`
-- `FCIQMCKrylovParams`
-- `AISelectorKrylovParams`
+  Used by `ccik_ground_energy_dense_thick_restart`.
+- `CCIKStochasticParams`
+  Used by `ccik_ground_energy_stochastic`.
+
+Each dataclass is the single source of truth for defaults.
 
 ## Config helpers
 
 - `load_toml(path)`
 - `load_default_toml()`
 - `load_config(path_or_none)`
-
 - `run_method_from_dict(run_dict)`
 - `run_methods_from_dict(run_dict)`
-
 - `ccik_params_from_dict(d)`
 - `ccik_thick_restart_params_from_dict(d)`
-- `cipsi_params_from_dict(d)`
-- `fciqmc_krylov_params_from_dict(d)`
-- `ai_selector_krylov_params_from_dict(d)`
-
+- `ccik_stochastic_params_from_dict(d)`
 - `cas_spec_from_dict(d)`
 
-## AI/ML support-selection utilities
+## CAS specification
 
-- `Selector` (protocol)
-- `CIPSISelector`, `GNNSelector`
-
-- `OperatorNN`, `OperatorNNConfig`
-- `FeatureMLP`, `FeatureMLPConfig`, `load_feature_mlp_checkpoint(...)`
-
-Note: ML dependencies are optional and imported lazily.
+- `CASSpec`
+  Fields:
+  - `ncas`: number of active orbitals
+  - `nelecas`: number of active electrons
+  - `ncore`: number of frozen doubly occupied core orbitals

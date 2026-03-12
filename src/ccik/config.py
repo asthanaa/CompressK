@@ -4,8 +4,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from .ai_selector_krylov import AISelectorKrylovParams
-from .params import CCIKParams, CCIKThickRestartParams, CIPSIParams, FCIQMCKrylovParams
+from .params import CCIKParams, CCIKStochasticParams, CCIKThickRestartParams
 from .pyscf_cas import CASSpec
 
 
@@ -16,7 +15,8 @@ def _require(d: dict[str, Any], key: str) -> Any:
 
 
 def load_toml(path: str | Path) -> dict[str, Any]:
-    """Load a TOML file using the stdlib (Python 3.11+: tomllib)."""
+    """Load a TOML file using the Python 3.11 stdlib parser."""
+
     import tomllib
 
     p = Path(path)
@@ -25,10 +25,7 @@ def load_toml(path: str | Path) -> dict[str, Any]:
 
 
 def load_default_toml() -> dict[str, Any]:
-    """Load the packaged default config TOML.
-
-    This allows driver scripts to run without requiring an external config file.
-    """
+    """Load the packaged default configuration."""
 
     import tomllib
     from importlib import resources
@@ -39,7 +36,7 @@ def load_default_toml() -> dict[str, Any]:
 
 
 def load_config(path: str | Path | None) -> dict[str, Any]:
-    """Load config from an explicit path, or fall back to the packaged default."""
+    """Load an explicit config file or the packaged default."""
 
     if path is None:
         return load_default_toml()
@@ -47,148 +44,86 @@ def load_config(path: str | Path | None) -> dict[str, Any]:
 
 
 def ccik_params_from_dict(d: dict[str, Any]) -> CCIKParams:
-    """Create CCIKParams from a dict (typically parsed from TOML)."""
-    base = CCIKParams()
-    out = asdict(base)
+    """Create ``CCIKParams`` from a parsed TOML section."""
 
-    if "m" in d:
-        out["m"] = int(d["m"])
-    if "nadd" in d:
-        out["nadd"] = int(d["nadd"])
-    if "nkeep" in d:
-        out["nkeep"] = int(d["nkeep"])
-    if "Kv" in d:
-        out["Kv"] = int(d["Kv"])
+    base = asdict(CCIKParams())
+    for key in ("m", "nadd", "nkeep", "Kv"):
+        if key in d:
+            base[key] = int(d[key])
     if "verbose" in d:
-        out["verbose"] = bool(d["verbose"])
-
+        base["verbose"] = bool(d["verbose"])
     if "orth_tol" in d:
-        out["orth_tol"] = float(d["orth_tol"])
-
-    return CCIKParams(**out)
+        base["orth_tol"] = float(d["orth_tol"])
+    return CCIKParams(**base)
 
 
 def ccik_thick_restart_params_from_dict(d: dict[str, Any]) -> CCIKThickRestartParams:
-    """Create CCIKThickRestartParams from a dict (typically parsed from TOML)."""
-    base = CCIKThickRestartParams()
-    out = asdict(base)
+    """Create ``CCIKThickRestartParams`` from a parsed TOML section."""
 
-    for k in ("m_cycle", "ncycles", "nroot"):
-        if k in d:
-            out[k] = int(d[k])
+    base = asdict(CCIKThickRestartParams())
+    for key in ("m_cycle", "ncycles", "nroot", "nadd", "nkeep", "Kv"):
+        if key in d:
+            base[key] = int(d[key])
     if "tol" in d:
-        out["tol"] = float(d["tol"])
-
-    for k in ("nadd", "nkeep", "Kv"):
-        if k in d:
-            out[k] = int(d[k])
+        base["tol"] = float(d["tol"])
     if "verbose" in d:
-        out["verbose"] = bool(d["verbose"])
-
+        base["verbose"] = bool(d["verbose"])
     if "orth_tol" in d:
-        out["orth_tol"] = float(d["orth_tol"])
-
-    return CCIKThickRestartParams(**out)
-
-
-def cipsi_params_from_dict(d: dict[str, Any]) -> CIPSIParams:
-    """Create CIPSIParams from a dict (typically parsed from TOML)."""
-    base = CIPSIParams()
-    out = asdict(base)
-
-    for k in ("niter", "nadd", "ndet_max", "Kv"):
-        if k in d:
-            out[k] = int(d[k])
-    if "davidson_tol" in d:
-        out["davidson_tol"] = float(d["davidson_tol"])
-    if "verbose" in d:
-        out["verbose"] = bool(d["verbose"])
-
-    return CIPSIParams(**out)
+        base["orth_tol"] = float(d["orth_tol"])
+    return CCIKThickRestartParams(**base)
 
 
-def fciqmc_krylov_params_from_dict(d: dict[str, Any]) -> FCIQMCKrylovParams:
-    """Create FCIQMCKrylovParams from a dict (typically parsed from TOML)."""
-    base = FCIQMCKrylovParams()
-    out = asdict(base)
+def ccik_stochastic_params_from_dict(d: dict[str, Any]) -> CCIKStochasticParams:
+    """Create ``CCIKStochasticParams`` from a parsed TOML section."""
 
-    for k in ("m", "nadd", "nkeep", "Kv", "n_walkers"):
-        if k in d:
-            out[k] = int(d[k])
+    base = asdict(CCIKStochasticParams())
+    for key in ("m", "nadd", "nkeep", "Kv", "n_walkers"):
+        if key in d:
+            base[key] = int(d[key])
     if "seed" in d:
-        out["seed"] = None if d["seed"] is None else int(d["seed"])
-
-    for k in ("parent_power", "p_double", "mixed_double_weight", "eps_denom"):
-        if k in d:
-            out[k] = float(d[k])
-
+        base["seed"] = None if d["seed"] is None else int(d["seed"])
+    for key in ("parent_power", "p_double", "mixed_double_weight", "eps_denom"):
+        if key in d:
+            base[key] = float(d[key])
     if "verbose" in d:
-        out["verbose"] = bool(d["verbose"])
+        base["verbose"] = bool(d["verbose"])
     if "orth_tol" in d:
-        out["orth_tol"] = float(d["orth_tol"])
-
-    return FCIQMCKrylovParams(**out)
-
-
-def ai_selector_krylov_params_from_dict(d: dict[str, Any]) -> AISelectorKrylovParams:
-    """Create AISelectorKrylovParams from a dict (typically parsed from TOML)."""
-
-    base = AISelectorKrylovParams()
-    out = asdict(base)
-
-    for k in ("m", "nadd", "nkeep", "Kv", "n_walkers"):
-        if k in d:
-            out[k] = int(d[k])
-    if "seed" in d:
-        out["seed"] = None if d["seed"] is None else int(d["seed"])
-
-    for k in ("parent_power", "p_double", "mixed_double_weight", "eps_denom"):
-        if k in d:
-            out[k] = float(d[k])
-
-    if "orth_tol" in d:
-        out["orth_tol"] = float(d["orth_tol"])
-    if "verbose" in d:
-        out["verbose"] = bool(d["verbose"])
-
-    return AISelectorKrylovParams(**out)
+        base["orth_tol"] = float(d["orth_tol"])
+    return CCIKStochasticParams(**base)
 
 
 def run_method_from_dict(d: dict[str, Any]) -> str:
-    """Return the requested method name (defaults to 'ccik')."""
-    method = str(d.get("method", "ccik")).strip()
-    return method
+    """Return the requested method name, defaulting to ``ccik``."""
+
+    return str(d.get("method", "ccik")).strip()
 
 
 def run_methods_from_dict(d: dict[str, Any]) -> list[str]:
-    """Return a list of requested methods.
+    """Return the requested method list.
 
-    Supported TOML shapes:
-    - method = "ccik"              -> ["ccik"]
-    - methods = ["ccik", "ccik_thick"]
-    If neither is provided, defaults to ["ccik"].
+    Supported shapes:
+    - ``method = "ccik"``
+    - ``methods = ["ccik", "ccik_thick"]``
     """
 
     if "methods" in d and d["methods"] is not None:
         raw = d["methods"]
         if not isinstance(raw, (list, tuple)):
             raise TypeError("run.methods must be a list of strings")
-        out = [str(x).strip() for x in raw]
-        out = [x for x in out if x]
+        out = [str(x).strip() for x in raw if str(x).strip()]
         return out if out else ["ccik"]
 
-    # Convenience: allow `method = [..]` as well.
     if "method" in d and isinstance(d["method"], (list, tuple)):
         raw = d["method"]
-        out = [str(x).strip() for x in raw]
-        out = [x for x in out if x]
+        out = [str(x).strip() for x in raw if str(x).strip()]
         return out if out else ["ccik"]
 
     return [run_method_from_dict(d)]
 
 
 def cas_spec_from_dict(d: dict[str, Any]) -> CASSpec:
-    """Create CASSpec from a dict (typically parsed from TOML)."""
+    """Create ``CASSpec`` from a parsed TOML section."""
+
     return CASSpec(
         ncas=int(_require(d, "ncas")),
         nelecas=int(_require(d, "nelecas")),
@@ -197,7 +132,8 @@ def cas_spec_from_dict(d: dict[str, Any]) -> CASSpec:
 
 
 def as_dict(obj: Any) -> dict[str, Any]:
-    """Best-effort conversion for dataclasses to plain dicts (debug/printing)."""
+    """Best-effort conversion for dataclasses to plain dictionaries."""
+
     try:
         return asdict(obj)
     except Exception:

@@ -1,9 +1,8 @@
-# N2 CAS(12,12) config (transfer-learning target)
-# - For N2 (14 electrons) and singlet spin=0, ensure: mol.nelectron = 2*ncore + nelecas
-#   CAS(12,12) -> ncore=1
+# N2 CAS(12,12) configuration for the supported CCIK solvers.
+# For N2 (14 electrons) and spin=0, CAS(12,12) requires ncore=1.
 
 [run]
-methods = ["ai_selector_krylov"]
+methods = ["ccik_stochastic"]
 
 [molecule]
 basis = "6-31g"
@@ -18,75 +17,39 @@ R_max = 5.0
 n_points = 20
 
 [cas]
-# CASCI active space
 ncas = 12
 nelecas = 12
 ncore = 1
 
 [ccik]
-# Dense CCIK parameters (kept for completeness)
 m = 100
 nadd = 5000
 nkeep = 10000
 Kv = 5000
-orth_tol = 1e-4
+orth_tol = 1e-12
 verbose = false
 
 [ccik_thick]
-# Dense CCIK + thick restart parameters
 m_cycle = 25
 ncycles = 1
 nroot = 5
 tol = 1e-6
-
 nadd = 5000
 nkeep = 10000
 Kv = 5000
-orth_tol = 1e-4
-verbose = false
-
-[cipsi]
-# CIPSI variational-only (no PT2)
-niter = 10
-nadd = 5000
-ndet_max = 10000
-Kv = 5000
-davidson_tol = 1e-10
-verbose = false
-
-[fciqmckrylov]
-# FCIQMC-inspired stochastic Krylov build.
-m = 50
-nadd = 5000
-nkeep = 10000
-Kv = 5000
-
-n_walkers = 100000
-seed = 0
-parent_power = 1.0
-p_double = 0.6
-mixed_double_weight = 1.0
-eps_denom = 1e-12
-
 orth_tol = 1e-12
 verbose = false
 
-[ai_selector_krylov]
-# AI-selector Krylov (used by scripts/n2_pes_ai_scan_and_plot.py)
-# NOTE: runtime is still dominated by the exact dense H|q> matvec.
-
+[ccik_stochastic]
 m = 50
 nadd = 15000
 nkeep = 20000
 Kv = 1000
-
 n_walkers = 200000
 seed = 0
-
 parent_power = 1.0
 p_double = 0.6
 mixed_double_weight = 1.0
 eps_denom = 1e-12
-
 orth_tol = 1e-12
 verbose = false

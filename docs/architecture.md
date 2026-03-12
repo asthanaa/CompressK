@@ -1,99 +1,73 @@
-# Architecture & module map
+# Architecture
 
-## Repo layout
+## Repository layout
 
-- `src/ccik/` — importable Python package (the “library”)
-- `scripts/` — runnable drivers (examples / sweeps). These are intended to be copied and modified.
-- `tests/` — unit/smoke tests and small sample configs (e.g. `tests/n2_sample.toml`).
-- `configs/` — optional user override configs (not required).
-- `legacy/` — older scripts preserved for reference (plus compatibility shims at repo root).
+- `src/ccik/`: importable package
+- `scripts/`: runnable example drivers
+- `tests/`: smoke tests and sample config
+- `configs/`: optional user override configs
+- `legacy/`: preserved historical scripts
 
-## Design goals
-
-- Keep heavy dependencies optional. The package can be imported with only NumPy installed.
-- Use PySCF only inside “runtime” paths (local imports) so import remains lightweight.
-- Keep “how to build a Hamiltonian” separate from “how to run compressed Krylov / selection”.
-
-## Core flow (dense algorithms)
-
-Most algorithms follow this high-level shape:
-
-1. Build a CAS Hamiltonian using PySCF
-2. Obtain an exact CAS-FCI reference energy for comparison (optional but used in scripts)
-3. Run an approximate solver that repeatedly applies `H|q>` and uses selection/compression
-4. Solve a (generalized) Ritz problem in the Krylov subspace
-
-## Key modules
+## Core modules
 
 ### `ccik.pyscf_cas`
 
-- `make_mol_pyscf(...)` — builds a PySCF `Mole`
-- `build_cas_hamiltonian_pyscf(...)` — produces `(h1eff, eri8, ecore, ncas, nelec)`
-- `exact_cas_fci_energy_pyscf(...)` — robust exact CAS-FCI reference
+Hamiltonian construction helpers:
+
+- `make_mol_pyscf(...)`
+- `build_cas_hamiltonian_pyscf(...)`
+- `exact_cas_fci_energy_pyscf(...)`
 
 ### `ccik.core`
 
-Dense CCIK implementation (the baseline algorithm).
+Baseline dense CCIK implementation and its shared linear-algebra helpers:
 
-Important helpers are colocated here:
-
-- `generalized_eigh(H, S)` — generalized Rayleigh–Ritz solve
-- `compress_keep_top_mask(ci, nkeep)` — support compression by top-|coeff|
-- `topk_positive_mask(score, k)` — selection helper used across methods
+- `ccik_ground_energy_dense(...)`
+- `compress_keep_top_mask(...)`
+- `topk_positive_mask(...)`
+- `generalized_eigh(...)`
 
 ### `ccik.thick_restart`
 
-Dense CCIK with thick restart:
+Thick-restart variant:
 
 - `ccik_ground_energy_dense_thick_restart(...)`
 
-### `ccik.cipsi`
+### `ccik.stochastic`
 
-CIPSI variational-only solver:
+Stochastic candidate-discovery variant:
 
-- `cipsi_dense_variational(...)`
+- `ccik_ground_energy_stochastic(...)`
 
-### `ccik.fciqmc_krylov`
+### `ccik.params`
 
-FCIQMC-inspired candidate discovery and selection, integrated into a dense Krylov build:
+Default parameter dataclasses:
 
-- `ccik_ground_energy_fciqmc_krylov(...)`
+- `CCIKParams`
+- `CCIKThickRestartParams`
+- `CCIKStochasticParams`
 
-### `ccik.ai_selector_krylov`
+### `ccik.config`
 
-AI-driven selection interface and an AI-selector Krylov workflow:
-
-- `Selector` protocol
-- `CIPSISelector` — score-based deterministic selector
-- `GNNSelector` — ML-driven selector (optional torch model)
-- `ccik_ground_energy_ai_selector_krylov(...)`
-
-### `ccik.operator_nn`
-
-Optional PyTorch/PyG operator-learning model for support selection.
-
-### `ccik.feature_mlp`
-
-Optional PyTorch-only MLP for scoring candidates in the AI-selector legacy path.
-
-### `ccik.config` + `ccik.params`
-
-- `ccik.params` — dataclass defaults for each method
-- `ccik.config` — parse TOML dicts into dataclass instances
+TOML loading and conversion into the parameter dataclasses.
 
 ## Drivers
 
 ### `scripts/n2_cas_scan.py`
 
-A complete “runner” that:
+Main example runner:
 
-- reads config
-- builds a bond-length scan
-- for each bond length:
-  - builds a PySCF molecule
-  - builds a CAS Hamiltonian
-  - computes exact CAS-FCI reference
-  - runs one or more approximate methods
-  - writes a CSV
+1. Load config
+2. Generate the N2 bond scan
+3. Build the CAS Hamiltonian for each geometry
+4. Compute CAS-FCI reference
+5. Run one or more CCIK solvers
+6. Write `out_n2_cas_scan.csv`
 
-See also `scripts/README.md` and [quickstart.md](quickstart.md).
+### `scripts/n2_pes_scan_and_plot.py`
+
+PES plotting helper for `ccik_thick` and `ccik_stochastic`.
+
+### `scripts/cr2_scan.py`
+
+Independent Cr2 CAS-FCI scan helper. It uses the same CAS-building utilities but is not part of the three-solver driver interface.

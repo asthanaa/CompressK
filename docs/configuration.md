@@ -1,169 +1,133 @@
-# Configuration reference (TOML)
+# Configuration reference
 
-Most runnable workflows use a TOML config consumed by `scripts/n2_cas_scan.py`.
+Most runs use a TOML file consumed by `scripts/n2_cas_scan.py`.
 
-Config loading behavior:
+Loading order:
 
-- If you pass `--config <path>`, that file is loaded.
-- If you omit `--config`, the driver prefers `configs/config.toml` if it exists.
-- Otherwise it falls back to the packaged defaults in `src/ccik/defaults/config.toml`.
-
-Implementation:
-
-- `ccik.config.load_config()` and `ccik.config.load_default_toml()`.
+- `--config <path>` if provided
+- `configs/config.toml` if present
+- packaged defaults in `src/ccik/defaults/config.toml`
 
 ## Top-level sections
 
-A typical config contains:
+A complete config can contain:
 
 - `[run]`
 - `[molecule]`
 - `[scan]`
 - `[cas]`
-
-and then per-method parameter blocks:
-
 - `[ccik]`
 - `[ccik_thick]`
-- `[cipsi]`
-- `[fciqmckrylov]`
-- `[ai_selector_krylov]` (optional)
-
-If a section/key is omitted, defaults come from the dataclasses in `src/ccik/params.py`.
+- `[ccik_stochastic]`
 
 ## `[run]`
 
-Controls which algorithm(s) to run.
+Controls which solver or solvers are executed.
 
 Supported shapes:
 
-- `method = "ccik"`  
-  Runs a single method.
+```toml
+[run]
+method = "ccik"
+```
 
-- `methods = ["ccik", "ccik_thick"]`  
-  Runs multiple methods in a sweep.
+```toml
+[run]
+methods = ["ccik", "ccik_thick", "ccik_stochastic"]
+```
 
-The driver additionally canonicalizes some aliases (see `_canonical_method()` in `scripts/n2_cas_scan.py`).
-
-Canonical method names:
+Valid method names:
 
 - `ccik`
 - `ccik_thick`
-- `cipsi_var`
-- `fciqmckrylov`
-- `ai_selector_krylov`
+- `ccik_stochastic`
+
+Aliases accepted by the driver:
+
+- `ccik_thick_restart`, `reuse_ritz`, `reuseRitz` -> `ccik_thick`
+- `stochastic`, `ccikstochastic`, `fciqmckrylov`, `fciqmc_krylov` -> `ccik_stochastic`
 
 ## `[molecule]`
 
-Used when building a PySCF molecule.
+Controls the PySCF molecule used to build the CAS Hamiltonian.
 
-Keys:
+- `basis`: AO basis label
+- `unit`: geometry unit, usually `Angstrom`
+- `charge`: total molecular charge
+- `spin`: PySCF spin value `2S`
+- `verbose`: PySCF verbosity level
 
-- `basis` (string)
-- `unit` (string; typically `"Angstrom"`)
-- `charge` (int)
-- `spin` (int; PySCF convention `2S`)
-- `verbose` (int)
-
-The geometry itself for N2 is generated inside the driver from the scan bond length.
+The N2 geometry itself is generated in the driver from the scan bond length.
 
 ## `[scan]`
 
-Controls the bond scan for N2.
+Controls the bond scan grid.
 
-Keys:
-
-- `R_min` (float; inclusive)
-- `R_max` (float; inclusive)
-- `n_points` (int)
+- `R_min`: minimum bond length in Angstrom
+- `R_max`: maximum bond length in Angstrom
+- `n_points`: number of scan points, including both endpoints
 
 The driver uses `numpy.linspace(R_min, R_max, n_points)`.
 
 ## `[cas]`
 
-Defines the active space.
+Defines the active space used to build the CAS Hamiltonian.
 
-Keys (required unless the driver uses defaults):
+- `ncas`: number of active orbitals
+- `nelecas`: number of active electrons
+- `ncore`: number of frozen doubly occupied core orbitals
 
-- `ncas` (int)
-- `nelecas` (int)
-- `ncore` (int; default 0)
+For singlets, the example drivers enforce `mol.nelectron == 2*ncore + nelecas`.
 
-The CAS Hamiltonian is constructed via `ccik.pyscf_cas.build_cas_hamiltonian_pyscf`.
+## `[ccik]`
 
-## `[ccik]` (dense CCIK)
+Parameters for baseline dense CCIK.
 
-Overrides `CCIKParams`.
+- `m`: maximum Krylov dimension
+- `nadd`: number of external determinants added from the score ranking at each step
+- `nkeep`: maximum support retained in each compressed Krylov vector
+- `Kv`: stabilizer size; always retain the top-`Kv` entries of `|H q_k|`
+- `orth_tol`: residual norm threshold used to detect Krylov breakdown
+- `verbose`: print per-iteration diagnostics
 
-Keys:
+Interpretation:
 
-- `m` (int): Krylov dimension
-- `nadd` (int): number of new determinants to add by score each step
-- `nkeep` (int): compression support size for each Krylov vector
-- `Kv` (int): stabilizer support size based on top-|v| values
-- `orth_tol` (float): breakdown / near-dependence tolerance
-- `verbose` (bool)
+- Larger `m` gives a richer Krylov subspace but increases runtime and memory.
+- Larger `nadd` explores more external determinants each step.
+- Larger `nkeep` stores denser Krylov vectors and usually improves accuracy.
+- `Kv` keeps the matvec numerically stable when the score ranking misses large raw amplitudes.
 
-## `[ccik_thick]` (dense CCIK + thick restart)
+## `[ccik_thick]`
 
-Overrides `CCIKThickRestartParams`.
+Parameters for CCIK with thick restart.
 
-Cycle/restart keys:
+- `m_cycle`: Krylov dimension built inside one restart cycle
+- `ncycles`: maximum number of restart cycles
+- `nroot`: number of lowest Ritz vectors reused as restart seeds
+- `tol`: convergence threshold on successive cycle energies
+- `nadd`, `nkeep`, `Kv`, `orth_tol`, `verbose`: same meanings as in `[ccik]`
 
-- `m_cycle` (int)
-- `ncycles` (int)
-- `nroot` (int)
-- `tol` (float)
+Interpretation:
 
-Selection/compression keys (same meaning as `[ccik]`):
+- `m_cycle` limits the size of each local Krylov solve.
+- `nroot` controls how much subspace information is carried into the next cycle.
+- `tol` determines when restart energies are considered converged.
 
-- `nadd`, `nkeep`, `Kv`, `orth_tol`, `verbose`
+## `[ccik_stochastic]`
 
-Note: the implementation has a “checkpointed Krylov” mode when `m_cycle` is a clean multiple of `ncycles` (see `src/ccik/thick_restart.py`).
+Parameters for CCIK-stochastic.
 
-## `[cipsi]` (CIPSI variational-only)
+- `m`, `nadd`, `nkeep`, `Kv`, `orth_tol`, `verbose`: same meanings as in `[ccik]`
+- `n_walkers`: number of stochastic proposals used to discover candidates
+- `seed`: random seed for reproducibility; use `null` for nondeterministic runs
+- `parent_power`: parent sampling exponent, where parents are weighted by `|q_J|**parent_power`
+- `p_double`: probability of proposing a double excitation instead of a single excitation
+- `mixed_double_weight`: relative weight of mixed-spin doubles among all doubles
+- `eps_denom`: lower bound used in the score denominator `|E_k - H_II|`
 
-Overrides `CIPSIParams`.
+Interpretation:
 
-Keys:
-
-- `niter` (int)
-- `nadd` (int)
-- `ndet_max` (int)
-- `Kv` (int)
-- `davidson_tol` (float)
-- `verbose` (bool)
-
-This method solves a projected variational problem in the selected space using PySCF’s Davidson solver.
-
-## `[fciqmckrylov]` (FCIQMC-inspired selection)
-
-Overrides `FCIQMCKrylovParams`.
-
-Keys:
-
-- Krylov/selection: `m`, `nadd`, `nkeep`, `Kv`, `orth_tol`, `verbose`
-- Walkers/spawning: `n_walkers`, `seed`, `parent_power`, `p_double`, `mixed_double_weight`, `eps_denom`
-
-Important implementation detail: this backend still uses the dense Hamiltonian contraction for `H|q>`; the “FCIQMC-inspired” part is how candidates are discovered and ranked.
-
-## `[ai_selector_krylov]` (AI selector)
-
-This section configures the AI-selector Krylov workflow.
-
-It uses the parameter dataclass `AISelectorKrylovParams` defined in `src/ccik/ai_selector_krylov.py`.
-
-Keys:
-
-- Krylov/selection: `m`, `nadd`, `nkeep`, `Kv`, `orth_tol`, `verbose`
-- Candidate discovery (walker spawning): `n_walkers`, `seed`, `parent_power`, `p_double`, `mixed_double_weight`
-- Scoring denominator floor: `eps_denom`
-
-Model checkpoint path:
-
-- CLI: `python scripts/n2_cas_scan.py --gnn-model <path>`
-- or config key: `ai_selector_krylov.gnn_model_path = "..."`
-
-The selector can run with no model (deterministic fallback) or use a PyTorch model.
-
-See [ml.md](ml.md) for details.
+- `n_walkers` is the main accuracy/runtime knob for stochastic discovery.
+- `parent_power > 1` biases proposals more strongly toward large-amplitude parents.
+- `p_double` and `mixed_double_weight` shape how the proposal budget is split across excitation types.
+- `eps_denom` prevents singular or unstable score denominators near diagonal crossings.

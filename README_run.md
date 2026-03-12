@@ -3,7 +3,7 @@
 
 ## Documentation
 
-For thorough docs (quickstart, config reference, algorithms, module map, ML components, development), see:
+For thorough docs (quickstart, config reference, algorithms, module map, development), see:
 
 - Hosted docs (GitHub Pages): https://asthanaa.github.io/CompressK/
 - `docs/index.md`
@@ -54,4 +54,3 @@ from ccik import ccik_ground_energy_dense, CCIKParams
 ```
 
 Then build integrals for your system (e.g. via `ccik.pyscf_cas`).
-

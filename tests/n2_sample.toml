@@ -1,20 +1,10 @@
-# Sample N2 input for the driver script `scripts/n2_cas_scan.py`.
-#
-# This is intentionally tiny/fast (STO-3G + CAS(6e,6o)) so you can confirm end-to-end
-# wiring before running larger active spaces.
-#
-# N2 has 14 electrons. For a closed-shell singlet, the script checks:
-#   mol.nelectron == 2*ncore + nelecas
-# Here: 2*4 + 6 = 14.
+# Small N2 sample input for scripts/n2_cas_scan.py
 
 [run]
-# Choose one:
-#   - "fciqmckrylov" : FCIQMC-inspired stochastic Krylov selection
-#   - "ccik_thick"  : dense CCIK with thick restart (reuse Ritz vectors)
-method = "fciqmckrylov"
+# Choose one of: ccik, ccik_thick, ccik_stochastic
+method = "ccik_stochastic"
 
 [molecule]
-# Keep this small for a quick demo.
 basis = "sto-3g"
 unit = "Angstrom"
 charge = 0
@@ -22,44 +12,44 @@ spin = 0
 verbose = 0
 
 [scan]
-# N2 bond distance scan (Å). For a single-point run, set R_min == R_max and n_points=1.
 R_min = 1.10
 R_max = 1.10
 n_points = 1
 
 [cas]
-# CAS(6e,6o) with 4 frozen core orbitals.
-# Total electrons (14) = 2*ncore (8) + nelecas (6)
 ncas = 6
 nelecas = 6
 ncore = 4
 
-[fciqmckrylov]
-# Compressed Krylov size
+[ccik]
 m = 20
-# Selection/compression knobs
 nadd = 200
 nkeep = 2000
 Kv = 400
-# Walker spawning
+orth_tol = 1e-12
+verbose = false
+
+[ccik_thick]
+m_cycle = 20
+ncycles = 1
+nroot = 3
+tol = 1e-8
+nadd = 200
+nkeep = 2000
+Kv = 400
+orth_tol = 1e-12
+verbose = false
+
+[ccik_stochastic]
+m = 20
+nadd = 200
+nkeep = 2000
+Kv = 400
 n_walkers = 5000
 seed = 0
 parent_power = 1.0
 p_double = 0.6
 mixed_double_weight = 1.0
 eps_denom = 1e-12
-orth_tol = 1e-12
-verbose = false
-
-[ccik_thick]
-# Thick-restart Krylov settings
-m_cycle = 20
-ncycles = 1
-nroot = 3
-tol = 1e-8
-# Selection/compression knobs
-nadd = 200
-nkeep = 2000
-Kv = 400
 orth_tol = 1e-12
 verbose = false

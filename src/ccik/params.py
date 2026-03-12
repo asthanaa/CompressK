@@ -5,88 +5,67 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CCIKParams:
-    """Parameters controlling the dense CCIK iteration.
+    """Parameters controlling the baseline dense CCIK iteration."""
 
-    This is the single source of truth for defaults; TOML config overrides are
-    applied on top of these defaults (see `ccik.config`).
-    """
-
+    # Maximum number of Krylov basis vectors to build.
     m: int = 100
+    # Number of external determinants added from the score ranking at each step.
     nadd: int = 2000
+    # Maximum support size retained for each compressed Krylov vector q_k.
     nkeep: int = 10000
+    # Stabilizer support size retained from the largest |(H q_k)_I| entries.
     Kv: int = 3000
+    # Emit per-iteration diagnostics.
     verbose: bool = False
-
-    # If the orthogonalized residual norm falls below this, treat as Krylov breakdown
-    # and stop adding new basis vectors.
+    # Treat smaller orthogonalized residual norms as Krylov breakdown.
     orth_tol: float = 1e-12
 
 
 @dataclass(frozen=True)
 class CCIKThickRestartParams:
-    """Parameters for dense CCIK with thick restart (reuse best Ritz vectors)."""
+    """Parameters for dense CCIK with thick restart."""
 
-    # Subspace construction per cycle
+    # Krylov basis size built within one restart cycle.
     m_cycle: int = 25
-    # Restart cycles
+    # Maximum number of restart cycles.
     ncycles: int = 10
-    # Number of Ritz vectors to keep as restart starts
+    # Number of lowest Ritz vectors reused as restart seeds.
     nroot: int = 3
-    # Convergence threshold on successive cycle energies
+    # Stop when successive restart energies differ by less than tol.
     tol: float = 1e-6
 
-    # Shared selection/compression knobs
+    # Same support-selection knobs used by baseline CCIK.
     nadd: int = 2000
     nkeep: int = 10000
     Kv: int = 3000
     verbose: bool = False
-
-    # Numerical tolerance used for Gram-Schmidt pruning of near-dependent vectors
-    # and Krylov breakdown detection inside a cycle.
     orth_tol: float = 1e-12
 
 
 @dataclass(frozen=True)
-class CIPSIParams:
-    """Parameters for CIPSI variational-only (no PT2) in the full CAS basis."""
+class CCIKStochasticParams:
+    """Parameters for CCIK-stochastic candidate discovery."""
 
-    niter: int = 10
-    nadd: int = 2000
-    ndet_max: int = 10000
-    Kv: int = 3000
-    davidson_tol: float = 1e-10
-    verbose: bool = False
-
-
-@dataclass(frozen=True)
-class FCIQMCKrylovParams:
-    """Parameters for an FCIQMC-inspired stochastic selection backend.
-
-    This backend is designed to plug into the existing dense Krylov build:
-    it still uses the dense `H|q>` contraction, but it selects new determinants
-    via walker sampling rather than deterministic top-n ranking.
-    """
-
-    # Krylov dimension
+    # Maximum number of Krylov basis vectors.
     m: int = 100
 
-    # Selection / compression knobs (aligned with CCIKParams naming)
+    # Same compression/selection knobs as baseline CCIK.
     nadd: int = 2000
     nkeep: int = 10000
     Kv: int = 3000
 
-    # Walker spawning parameters
+    # Number of stochastic proposals used to discover candidates for each iteration.
     n_walkers: int = 20000
+    # Random seed for reproducible candidate discovery. Use None for nondeterministic runs.
     seed: int | None = 0
 
-    # Parent selection distribution: p(parent=J) ∝ |q_J|^parent_power
+    # Parents are sampled with probability proportional to |q_J|**parent_power.
     parent_power: float = 1.0
-
-    # Excitation proposal mixture
+    # Probability of proposing a double excitation instead of a single excitation.
     p_double: float = 0.6
+    # Relative weight of mixed-spin doubles among all double excitations.
     mixed_double_weight: float = 1.0
-
-    # Score denominator floor for |E - H_II|
+    # Lower bound for |E_k - H_II| when evaluating the selection score.
     eps_denom: float = 1e-12
 
     verbose: bool = False
