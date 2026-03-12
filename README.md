@@ -1,9 +1,6 @@
 # CompressK / `ccik`
 
-[![Docs](https://img.shields.io/badge/Docs-Live%20Site-0A7EA4?style=for-the-badge)](https://asthanaa.github.io/CompressK/)
-[![Quickstart](https://img.shields.io/badge/Docs-Quickstart-1F6FEB?style=for-the-badge)](https://asthanaa.github.io/CompressK/quickstart.html)
-[![Algorithms](https://img.shields.io/badge/Docs-Algorithms-2DA44E?style=for-the-badge)](https://asthanaa.github.io/CompressK/algorithms.html)
-[![Configuration](https://img.shields.io/badge/Docs-Configuration-BD561D?style=for-the-badge)](https://asthanaa.github.io/CompressK/configuration.html)
+[![Documentation](https://img.shields.io/badge/Documentation-Open%20Docs-0A7EA4?style=for-the-badge)](https://asthanaa.github.io/CompressK/)
 
 This repository contains a Python package in `src/ccik` and runnable drivers in `scripts` for three compressed-Krylov solvers:
 
